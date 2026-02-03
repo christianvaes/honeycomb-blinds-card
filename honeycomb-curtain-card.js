@@ -86,9 +86,9 @@ class HoneycombCurtainCard extends HTMLElement {
       const m = /^#?([0-9a-fA-F]{6})$/.exec(hex);
       if (m) {
         const val = m[1];
-        const r = int(val[0:2]);
-        const g = int(val[2:4]);
-        const b = int(val[4:6]);
+        const r = int(val.slice(0, 2));
+        const g = int(val.slice(2, 4));
+        const b = int(val.slice(4, 6));
         const dark = [r, g, b].map((v) => Math.max(0, Math.round(v * 0.9)));
         return {
           base: `rgb(${r}, ${g}, ${b})`,
@@ -646,9 +646,9 @@ class HoneycombCurtainCardEditor extends HTMLElement {
       const m = /^#?([0-9a-fA-F]{6})$/.exec(hex);
       if (m) {
         const val = m[1];
-        const r = int(val[0:2]);
-        const g = int(val[2:4]);
-        const b = int(val[4:6]);
+        const r = int(val.slice(0, 2));
+        const g = int(val.slice(2, 4));
+        const b = int(val.slice(4, 6));
         const dark = [r, g, b].map((v) => Math.max(0, Math.round(v * 0.9)));
         return {
           base: `rgb(${r}, ${g}, ${b})`,
