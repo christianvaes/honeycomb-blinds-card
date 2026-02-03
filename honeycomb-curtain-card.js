@@ -219,8 +219,8 @@ class HoneycombCurtainCard extends HTMLElement {
             padding: 10px 14px;
             border-radius: var(--ha-card-border-radius, 12px);
             border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.2));
-            background: var(--primary-color);
-            color: var(--text-primary-color, #ffffff);
+            background: var(--ha-card-background, var(--card-background-color, #fff));
+            color: var(--primary-text-color);
             font-weight: 600;
             cursor: pointer;
             overflow: hidden;
