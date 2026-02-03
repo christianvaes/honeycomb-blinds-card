@@ -561,6 +561,44 @@ class HoneycombCurtainCardEditor extends HTMLElement {
     this._render();
   }
 
+  _formSchema() {
+    return [
+      { name: "name", selector: { text: {} } },
+      { name: "cover_top", selector: { entity: { domain: "cover" } } },
+      { name: "cover_bottom", selector: { entity: { domain: "cover" } } },
+      {
+        name: "open",
+        type: "expandable",
+        title: this._t("open_position"),
+        schema: [
+          { name: "open_top", selector: { number: { min: 0, max: 100, mode: "box" } } },
+          { name: "open_bottom", selector: { number: { min: 0, max: 100, mode: "box" } } },
+        ],
+      },
+      {
+        name: "close",
+        type: "expandable",
+        title: this._t("close_position"),
+        schema: [
+          { name: "close_top", selector: { number: { min: 0, max: 100, mode: "box" } } },
+          { name: "close_bottom", selector: { number: { min: 0, max: 100, mode: "box" } } },
+        ],
+      },
+    ];
+  }
+
+  _formData() {
+    return {
+      name: this._config.name || "",
+      cover_top: this._config.cover_top || "",
+      cover_bottom: this._config.cover_bottom || "",
+      open_top: this._config.open_top ?? 0,
+      open_bottom: this._config.open_bottom ?? 0,
+      close_top: this._config.close_top ?? 0,
+      close_bottom: this._config.close_bottom ?? 0,
+    };
+  }
+
   _render() {
     if (!this._hass || !this._config) return;
     if (!this.shadowRoot) {
@@ -579,14 +617,8 @@ class HoneycombCurtainCardEditor extends HTMLElement {
             font-size: 0.9rem;
             color: var(--secondary-text-color);
           }
-          ha-entity-picker,
-          ha-textfield {
+          ha-form, ha-textfield {
             width: 100%;
-          }
-          .split {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
           }
           .preset {
             display: grid;
@@ -603,25 +635,7 @@ class HoneycombCurtainCardEditor extends HTMLElement {
           }
         </style>
         <div class="form">
-          <div class="row">
-            <ha-textfield id="name" label=""></ha-textfield>
-          </div>
-          <div class="row" id="row-cover_top"></div>
-          <div class="row" id="row-cover_bottom"></div>
-          <div class="row">
-            <label id="label-open">Open position</label>
-            <div class="split">
-              <ha-textfield id="open_top" type="number" min="0" max="100" label=""></ha-textfield>
-              <ha-textfield id="open_bottom" type="number" min="0" max="100" label=""></ha-textfield>
-            </div>
-          </div>
-          <div class="row">
-            <label id="label-close">Close position</label>
-            <div class="split">
-              <ha-textfield id="close_top" type="number" min="0" max="100" label=""></ha-textfield>
-              <ha-textfield id="close_bottom" type="number" min="0" max="100" label=""></ha-textfield>
-            </div>
-          </div>
+          <ha-form id="ha-form"></ha-form>
           <div class="row">
             <label id="label-presets">Extra presets</label>
             <div id="presets"></div>
@@ -630,24 +644,8 @@ class HoneycombCurtainCardEditor extends HTMLElement {
         </div>
       `;
 
-      this.shadowRoot.getElementById("name").addEventListener("input", (e) => {
-        this._updateConfig({ name: e.target.value });
-      });
-
-      this.shadowRoot.getElementById("open_top").addEventListener("input", (e) => {
-        this._updateConfig({ open_top: Number(e.target.value) });
-      });
-
-      this.shadowRoot.getElementById("open_bottom").addEventListener("input", (e) => {
-        this._updateConfig({ open_bottom: Number(e.target.value) });
-      });
-
-      this.shadowRoot.getElementById("close_top").addEventListener("input", (e) => {
-        this._updateConfig({ close_top: Number(e.target.value) });
-      });
-
-      this.shadowRoot.getElementById("close_bottom").addEventListener("input", (e) => {
-        this._updateConfig({ close_bottom: Number(e.target.value) });
+      this.shadowRoot.getElementById("ha-form").addEventListener("value-changed", (e) => {
+        this._updateConfig(e.detail.value);
       });
 
       this.shadowRoot.getElementById("add-preset").addEventListener("click", () => {
@@ -657,50 +655,15 @@ class HoneycombCurtainCardEditor extends HTMLElement {
       });
     }
 
-    const nameInput = this.shadowRoot.getElementById("name");
-    if (nameInput) nameInput.value = this._config.name || "";
+    const form = this.shadowRoot.getElementById("ha-form");
+    form.hass = this._hass;
+    form.schema = this._formSchema();
+    form.data = this._formData();
 
-    this._renderEntitySelector("cover_top", this._t("top_motor"), this._config.cover_top || "");
-    this._renderEntitySelector("cover_bottom", this._t("bottom_motor"), this._config.cover_bottom || "");
-
-    this.shadowRoot.getElementById("open_top").value = this._config.open_top ?? 0;
-    this.shadowRoot.getElementById("open_bottom").value = this._config.open_bottom ?? 0;
-    this.shadowRoot.getElementById("close_top").value = this._config.close_top ?? 0;
-    this.shadowRoot.getElementById("close_bottom").value = this._config.close_bottom ?? 0;
-
-    this.shadowRoot.getElementById("label-open").textContent = this._t("open_position");
-    this.shadowRoot.getElementById("label-close").textContent = this._t("close_position");
     this.shadowRoot.getElementById("label-presets").textContent = this._t("presets");
     this.shadowRoot.getElementById("add-preset").textContent = this._t("add_preset");
 
     this._renderPresets();
-    this.shadowRoot.getElementById("name").label = this._t("name");
-    this.shadowRoot.getElementById("open_top").label = this._t("top");
-    this.shadowRoot.getElementById("open_bottom").label = this._t("bottom");
-    this.shadowRoot.getElementById("close_top").label = this._t("top");
-    this.shadowRoot.getElementById("close_bottom").label = this._t("bottom");
-  }
-
-  _renderEntitySelector(id, label, value) {
-    const row = this.shadowRoot.getElementById(`row-${id}`);
-    if (!row) return;
-
-    let picker = row.querySelector("ha-entity-picker");
-    if (!picker) {
-      row.innerHTML = "";
-      picker = document.createElement("ha-entity-picker");
-      picker.id = id;
-      picker.addEventListener("value-changed", (e) => {
-        this._updateConfig({ [id]: e.detail.value });
-      });
-      row.appendChild(picker);
-    }
-
-    picker.hass = this._hass;
-    picker.label = label;
-    if (picker.includeDomains) picker.includeDomains = ["cover"];
-    if (picker.allowCustomEntity !== undefined) picker.allowCustomEntity = false;
-    if (picker.value !== value) picker.value = value;
   }
 
   _renderPresets() {
