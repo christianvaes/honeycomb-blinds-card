@@ -67,6 +67,35 @@ class HoneycombCurtainCard extends HTMLElement {
     };
   }
 
+  _ensureEntityPickers() {
+    const form = this.shadowRoot && this.shadowRoot.querySelector(".form");
+    if (!form) return;
+    if (this.shadowRoot.getElementById("cover_top") && this.shadowRoot.getElementById("cover_bottom")) return;
+
+    const rows = form.querySelectorAll(".row");
+    const insertAfter = rows.length ? rows[0] : null; // after name row
+
+    const makeRow = (id) => {
+      const row = document.createElement("div");
+      row.className = "row";
+      const picker = document.createElement("ha-entity-picker");
+      picker.id = id;
+      row.appendChild(picker);
+      return row;
+    };
+
+    const topRow = makeRow("cover_top");
+    const bottomRow = makeRow("cover_bottom");
+
+    if (insertAfter && insertAfter.parentNode) {
+      insertAfter.parentNode.insertBefore(bottomRow, insertAfter.nextSibling);
+      insertAfter.parentNode.insertBefore(topRow, insertAfter.nextSibling);
+    } else {
+      form.prepend(bottomRow);
+      form.prepend(topRow);
+    }
+  }
+
   _render() {
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
@@ -561,6 +590,35 @@ class HoneycombCurtainCardEditor extends HTMLElement {
     this._render();
   }
 
+  _ensureEntityPickers() {
+    const form = this.shadowRoot && this.shadowRoot.querySelector(".form");
+    if (!form) return;
+    if (this.shadowRoot.getElementById("cover_top") && this.shadowRoot.getElementById("cover_bottom")) return;
+
+    const rows = form.querySelectorAll(".row");
+    const insertAfter = rows.length ? rows[0] : null; // after name row
+
+    const makeRow = (id) => {
+      const row = document.createElement("div");
+      row.className = "row";
+      const picker = document.createElement("ha-entity-picker");
+      picker.id = id;
+      row.appendChild(picker);
+      return row;
+    };
+
+    const topRow = makeRow("cover_top");
+    const bottomRow = makeRow("cover_bottom");
+
+    if (insertAfter && insertAfter.parentNode) {
+      insertAfter.parentNode.insertBefore(bottomRow, insertAfter.nextSibling);
+      insertAfter.parentNode.insertBefore(topRow, insertAfter.nextSibling);
+    } else {
+      form.prepend(bottomRow);
+      form.prepend(topRow);
+    }
+  }
+
   _render() {
     if (!this._hass || !this._config) return;
     if (!this.shadowRoot) {
@@ -669,6 +727,8 @@ class HoneycombCurtainCardEditor extends HTMLElement {
         this._updateConfig({ presets });
       });
     }
+
+    this._ensureEntityPickers();
 
     const nameInput = this.shadowRoot.getElementById("name");
     if (nameInput) nameInput.value = this._config.name || "";
