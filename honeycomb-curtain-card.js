@@ -513,6 +513,7 @@ class HoneycombCurtainCardEditor extends HTMLElement {
         open_position: "Open position",
         close_position: "Close position",
         presets: "Extra presets",
+        positions: "Positions",
         add_preset: "Add preset",
         new_preset: "New preset",
         top: "Top",
@@ -527,6 +528,7 @@ class HoneycombCurtainCardEditor extends HTMLElement {
         open_position: "Openen positie",
         close_position: "Sluiten positie",
         presets: "Extra standen",
+        positions: "Posities",
         add_preset: "Stand toevoegen",
         new_preset: "Nieuwe stand",
         top: "Boven",
@@ -566,26 +568,6 @@ class HoneycombCurtainCardEditor extends HTMLElement {
       { name: "name", label: this._t("name"), selector: { text: {} } },
       { name: "cover_top", label: this._t("top_motor"), selector: { entity: { domain: "cover" } } },
       { name: "cover_bottom", label: this._t("bottom_motor"), selector: { entity: { domain: "cover" } } },
-      {
-        name: "open_top",
-        label: `${this._t("open_position")} (${this._t("top")})`,
-        selector: { number: { min: 0, max: 100, mode: "box" } },
-      },
-      {
-        name: "open_bottom",
-        label: `${this._t("open_position")} (${this._t("bottom")})`,
-        selector: { number: { min: 0, max: 100, mode: "box" } },
-      },
-      {
-        name: "close_top",
-        label: `${this._t("close_position")} (${this._t("top")})`,
-        selector: { number: { min: 0, max: 100, mode: "box" } },
-      },
-      {
-        name: "close_bottom",
-        label: `${this._t("close_position")} (${this._t("bottom")})`,
-        selector: { number: { min: 0, max: 100, mode: "box" } },
-      },
     ];
   }
 
@@ -594,10 +576,6 @@ class HoneycombCurtainCardEditor extends HTMLElement {
       name: this._config.name || "",
       cover_top: this._config.cover_top || "",
       cover_bottom: this._config.cover_bottom || "",
-      open_top: this._config.open_top ?? 0,
-      open_bottom: this._config.open_bottom ?? 0,
-      close_top: this._config.close_top ?? 0,
-      close_bottom: this._config.close_bottom ?? 0,
     };
   }
 
@@ -614,6 +592,11 @@ class HoneycombCurtainCardEditor extends HTMLElement {
           .row {
             display: grid;
             gap: 6px;
+          }
+          .split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
           }
           label {
             font-size: 0.9rem;
@@ -639,6 +622,17 @@ class HoneycombCurtainCardEditor extends HTMLElement {
         <div class="form">
           <ha-form id="ha-form"></ha-form>
           <div class="row">
+            <label id="label-positions">Posities</label>
+            <div class="split">
+              <ha-textfield id="open_top" type="number" min="0" max="100" label=""></ha-textfield>
+              <ha-textfield id="close_top" type="number" min="0" max="100" label=""></ha-textfield>
+            </div>
+            <div class="split">
+              <ha-textfield id="open_bottom" type="number" min="0" max="100" label=""></ha-textfield>
+              <ha-textfield id="close_bottom" type="number" min="0" max="100" label=""></ha-textfield>
+            </div>
+          </div>
+          <div class="row">
             <label id="label-presets">Extra presets</label>
             <div id="presets"></div>
             <button id="add-preset" class="mini" type="button"></button>
@@ -648,6 +642,19 @@ class HoneycombCurtainCardEditor extends HTMLElement {
 
       this.shadowRoot.getElementById("ha-form").addEventListener("value-changed", (e) => {
         this._updateConfig(e.detail.value);
+      });
+
+      this.shadowRoot.getElementById("open_top").addEventListener("input", (e) => {
+        this._updateConfig({ open_top: Number(e.target.value) });
+      });
+      this.shadowRoot.getElementById("close_top").addEventListener("input", (e) => {
+        this._updateConfig({ close_top: Number(e.target.value) });
+      });
+      this.shadowRoot.getElementById("open_bottom").addEventListener("input", (e) => {
+        this._updateConfig({ open_bottom: Number(e.target.value) });
+      });
+      this.shadowRoot.getElementById("close_bottom").addEventListener("input", (e) => {
+        this._updateConfig({ close_bottom: Number(e.target.value) });
       });
 
       this.shadowRoot.getElementById("add-preset").addEventListener("click", () => {
@@ -663,6 +670,17 @@ class HoneycombCurtainCardEditor extends HTMLElement {
     form.schema = this._formSchema();
     form.data = this._formData();
 
+    this.shadowRoot.getElementById("open_top").value = this._config.open_top ?? 0;
+    this.shadowRoot.getElementById("close_top").value = this._config.close_top ?? 0;
+    this.shadowRoot.getElementById("open_bottom").value = this._config.open_bottom ?? 0;
+    this.shadowRoot.getElementById("close_bottom").value = this._config.close_bottom ?? 0;
+
+    this.shadowRoot.getElementById("open_top").label = `${this._t("open_position")} (${this._t("top")})`;
+    this.shadowRoot.getElementById("close_top").label = `${this._t("close_position")} (${this._t("top")})`;
+    this.shadowRoot.getElementById("open_bottom").label = `${this._t("open_position")} (${this._t("bottom")})`;
+    this.shadowRoot.getElementById("close_bottom").label = `${this._t("close_position")} (${this._t("bottom")})`;
+
+    this.shadowRoot.getElementById("label-positions").textContent = this._t("positions");
     this.shadowRoot.getElementById("label-presets").textContent = this._t("presets");
     this.shadowRoot.getElementById("add-preset").textContent = this._t("add_preset");
 
