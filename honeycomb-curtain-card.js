@@ -33,8 +33,6 @@ class HoneycombCurtainCard extends HTMLElement {
         open_state: "Open",
         closed_state: "Closed",
         partial: "Partially open",
-        preset_middle: "Middle",
-        preset_bottom_closed: "Bottom closed",
       },
       nl: {
         open: "Openen",
@@ -49,8 +47,6 @@ class HoneycombCurtainCard extends HTMLElement {
         open_state: "Open",
         closed_state: "Gesloten",
         partial: "Gedeeltelijk",
-        preset_middle: "Midden",
-        preset_bottom_closed: "Onderkant gesloten",
       },
     };
     const table = dict[lang] || dict.en;
@@ -341,8 +337,8 @@ class HoneycombCurtainCard extends HTMLElement {
       close_top: 0,
       close_bottom: 0,
       presets: [
-        { name: this._t("preset_middle"), top: 46, bottom: 15, enabled: true },
-        { name: this._t("preset_bottom_closed"), top: 46, bottom: 0, enabled: true },
+        { name: "Midden", top: 46, bottom: 15, enabled: true },
+        { name: "Onderkant gesloten", top: 46, bottom: 0, enabled: true },
       ],
     };
 
@@ -523,8 +519,6 @@ class HoneycombCurtainCardEditor extends HTMLElement {
         bottom: "Bottom",
         remove: "Remove",
         preset: "Preset",
-        preset_middle: "Middle",
-        preset_bottom_closed: "Bottom closed",
       },
       nl: {
         name: "Naam",
@@ -539,8 +533,6 @@ class HoneycombCurtainCardEditor extends HTMLElement {
         bottom: "Onder",
         remove: "Verwijder",
         preset: "Stand",
-        preset_middle: "Midden",
-        preset_bottom_closed: "Onderkant gesloten",
       },
     };
     const table = dict[lang] || dict.en;
@@ -555,8 +547,8 @@ class HoneycombCurtainCardEditor extends HTMLElement {
       close_top: 0,
       close_bottom: 0,
       presets: [
-        { name: this._t("preset_middle"), top: 46, bottom: 15, enabled: true },
-        { name: this._t("preset_bottom_closed"), top: 46, bottom: 0, enabled: true },
+        { name: "Midden", top: 46, bottom: 15, enabled: true },
+        { name: "Onderkant gesloten", top: 46, bottom: 0, enabled: true },
       ],
       ...config,
     };
@@ -720,31 +712,33 @@ class HoneycombCurtainCardEditor extends HTMLElement {
       const row = document.createElement("div");
       row.className = "preset";
 
-      const name = document.createElement("input");
-      name.type = "text";
+      const name = document.createElement("ha-textfield");
       name.value = preset.name || this._t("preset");
+      name.label = this._t("name");
       name.addEventListener("input", (e) => {
         const next = [...presets];
         next[index] = { ...next[index], name: e.target.value };
         this._updateConfig({ presets: next });
       });
 
-      const top = document.createElement("input");
+      const top = document.createElement("ha-textfield");
       top.type = "number";
       top.min = "0";
       top.max = "100";
       top.value = preset.top ?? 0;
+      top.label = this._t("top");
       top.addEventListener("input", (e) => {
         const next = [...presets];
         next[index] = { ...next[index], top: Number(e.target.value) };
         this._updateConfig({ presets: next });
       });
 
-      const bottom = document.createElement("input");
+      const bottom = document.createElement("ha-textfield");
       bottom.type = "number";
       bottom.min = "0";
       bottom.max = "100";
       bottom.value = preset.bottom ?? 0;
+      bottom.label = this._t("bottom");
       bottom.addEventListener("input", (e) => {
         const next = [...presets];
         next[index] = { ...next[index], bottom: Number(e.target.value) };
