@@ -685,46 +685,22 @@ class HoneycombCurtainCardEditor extends HTMLElement {
     const row = this.shadowRoot.getElementById(`row-${id}`);
     if (!row) return;
 
-    row.innerHTML = "";
-
-    const covers = Object.keys(this._hass.states)
-      .filter((entityId) => entityId.startsWith("cover."))
-      .sort();
-
-    if (customElements.get("ha-entity-picker")) {
-      const picker = document.createElement("ha-entity-picker");
+    let picker = row.querySelector("ha-entity-picker");
+    if (!picker) {
+      row.innerHTML = "";
+      picker = document.createElement("ha-entity-picker");
       picker.id = id;
-      picker.hass = this._hass;
-      picker.label = label;
-      if (picker.includeDomains) picker.includeDomains = ["cover"];
-      picker.value = value;
       picker.addEventListener("value-changed", (e) => {
         this._updateConfig({ [id]: e.detail.value });
       });
       row.appendChild(picker);
-      return;
     }
 
-    const listId = `list-${id}`;
-    const field = document.createElement("ha-textfield");
-    field.id = id;
-    field.label = label;
-    field.value = value;
-    field.setAttribute("list", listId);
-    field.addEventListener("input", (e) => {
-      this._updateConfig({ [id]: e.target.value });
-    });
-
-    const datalist = document.createElement("datalist");
-    datalist.id = listId;
-    covers.forEach((entityId) => {
-      const opt = document.createElement("option");
-      opt.value = entityId;
-      datalist.appendChild(opt);
-    });
-
-    row.appendChild(field);
-    row.appendChild(datalist);
+    picker.hass = this._hass;
+    picker.label = label;
+    if (picker.includeDomains) picker.includeDomains = ["cover"];
+    if (picker.allowCustomEntity !== undefined) picker.allowCustomEntity = false;
+    if (picker.value !== value) picker.value = value;
   }
 
   _renderPresets() {
