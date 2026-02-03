@@ -20,6 +20,20 @@ class HoneycombCurtainCard extends HTMLElement {
     return 3;
   }
 
+  static getConfigElement() {
+    return document.createElement("honeycomb-curtain-card-editor");
+  }
+
+  static getStubConfig(hass) {
+    const covers = Object.keys(hass.states).filter((id) => id.startsWith("cover."));
+    return {
+      type: "custom:honeycomb-curtain-card",
+      name: "Honeycomb Gordijn",
+      cover_top: covers[0] || "",
+      cover_bottom: covers[1] || "",
+    };
+  }
+
   _render() {
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
@@ -335,6 +349,118 @@ class HoneycombCurtainCard extends HTMLElement {
 }
 
 customElements.define("honeycomb-curtain-card", HoneycombCurtainCard);
+
+
+class HoneycombCurtainCardEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = { ...config };
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  _render() {
+    if (!this._hass || !this._config) return;
+    if (!this.shadowRoot) {
+      this.attachShadow({ mode: "open" });
+      this.shadowRoot.innerHTML = `
+        <style>
+          .form {
+            display: grid;
+            gap: 12px;
+          }
+          .row {
+            display: grid;
+            gap: 6px;
+          }
+          label {
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
+          }
+          input, select {
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            background: var(--card-background-color, #fff);
+            color: var(--primary-text-color);
+          }
+        </style>
+        <div class="form">
+          <div class="row">
+            <label for="name">Naam</label>
+            <input id="name" type="text" placeholder="Honeycomb Gordijn" />
+          </div>
+          <div class="row">
+            <label for="cover_top">Bovenste motor (cover)</label>
+            <select id="cover_top"></select>
+          </div>
+          <div class="row">
+            <label for="cover_bottom">Onderste motor (cover)</label>
+            <select id="cover_bottom"></select>
+          </div>
+        </div>
+      `;
+
+      this.shadowRoot.getElementById("name").addEventListener("input", (e) => {
+        this._updateConfig({ name: e.target.value });
+      });
+
+      this.shadowRoot.getElementById("cover_top").addEventListener("change", (e) => {
+        this._updateConfig({ cover_top: e.target.value });
+      });
+
+      this.shadowRoot.getElementById("cover_bottom").addEventListener("change", (e) => {
+        this._updateConfig({ cover_bottom: e.target.value });
+      });
+    }
+
+    const nameInput = this.shadowRoot.getElementById("name");
+    if (nameInput) nameInput.value = this._config.name || "";
+
+    const coverOptions = Object.keys(this._hass.states)
+      .filter((id) => id.startsWith("cover."))
+      .sort();
+
+    const topSelect = this.shadowRoot.getElementById("cover_top");
+    const bottomSelect = this.shadowRoot.getElementById("cover_bottom");
+
+    this._fillSelect(topSelect, coverOptions, this._config.cover_top || "");
+    this._fillSelect(bottomSelect, coverOptions, this._config.cover_bottom || "");
+  }
+
+  _fillSelect(selectEl, options, selected) {
+    if (!selectEl) return;
+    const current = selectEl.value;
+    selectEl.innerHTML = "";
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = "-- kies cover --";
+    selectEl.appendChild(empty);
+
+    options.forEach((id) => {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = id;
+      selectEl.appendChild(opt);
+    });
+
+    selectEl.value = selected || current || "";
+  }
+
+  _updateConfig(changes) {
+    this._config = { ...this._config, ...changes };
+    this.dispatchEvent(new CustomEvent("config-changed", {
+      detail: { config: this._config },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+}
+
+customElements.define("honeycomb-curtain-card-editor", HoneycombCurtainCardEditor);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
