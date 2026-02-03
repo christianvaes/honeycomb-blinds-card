@@ -3,11 +3,7 @@ class HoneycombCurtainCard extends HTMLElement {
     if (!config || !config.cover_top || !config.cover_bottom) {
       throw new Error("You must define 'cover_top' and 'cover_bottom'.");
     }
-    this._config = {
-      name: "",
-      tap_action: "nearest",
-      ...config,
-    };
+    this._config = this._normalizeConfig(config);
   }
 
   set hass(hass) {
@@ -78,21 +74,29 @@ class HoneycombCurtainCard extends HTMLElement {
             inset: 12px;
             border-radius: 10px;
             border: 6px solid var(--hc-black);
-            background: linear-gradient(180deg, #b9d0ea 0%, #d9e7f6 60%, #f4f8fd 100%);
-            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.2);
+            background:
+              linear-gradient(160deg, rgba(116, 150, 185, 0.75) 0%, rgba(168, 195, 222, 0.55) 40%, rgba(220, 236, 248, 0.85) 100%),
+              linear-gradient(0deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12));
+            box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.28);
             z-index: 1;
+          }
+
+          .window::before {
+            content: "";
+            position: absolute;
+            inset: 6% 8% 50% 8%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0));
+            border-radius: 10px;
+            opacity: 0.7;
           }
 
           .window::after {
             content: "";
             position: absolute;
-            left: 10%;
-            top: 8%;
-            width: 45%;
-            height: 30%;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0));
-            border-radius: 8px;
-            opacity: 0.7;
+            inset: 58% 10% 8% 10%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0));
+            border-radius: 12px;
+            opacity: 0.6;
           }
 
           .top-box {
@@ -163,12 +167,13 @@ class HoneycombCurtainCard extends HTMLElement {
 
           .actions {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin-top: 14px;
           }
 
           .btn {
-            flex: 1;
+            flex: 1 1 120px;
             padding: 10px 12px;
             border-radius: 10px;
             border: 1px solid #111111;
@@ -206,26 +211,34 @@ class HoneycombCurtainCard extends HTMLElement {
               <div>Ondermotor: <strong id="bottom-pos">-</strong></div>
               <div>Status: <strong id="status-text">-</strong></div>
             </div>
-            <div class="actions">
-              <button class="btn" id="btn-open">Openen</button>
-              <button class="btn" id="btn-stop">Stop</button>
-              <button class="btn" id="btn-close">Sluiten</button>
-            </div>
+            <div class="actions" id="actions"></div>
             <div class="hint">Tik op het plaatje om de dichtstbijzijnde rail te verplaatsen.</div>
           </div>
         </ha-card>
       `;
 
-      this.shadowRoot.getElementById("btn-open").addEventListener("click", () => {
-        this._setBoth(0, 100);
-      });
-
-      this.shadowRoot.getElementById("btn-stop").addEventListener("click", () => {
-        this._stopBoth();
-      });
-
-      this.shadowRoot.getElementById("btn-close").addEventListener("click", () => {
-        this._setBoth(0, 0);
+      this._actionsEl = this.shadowRoot.getElementById("actions");
+      this._actionsEl.addEventListener("click", (ev) => {
+        const btn = ev.target.closest("button");
+        if (!btn) return;
+        const action = btn.dataset.action;
+        if (action === "open") {
+          this._setBoth(this._config.open_top, this._config.open_bottom);
+          return;
+        }
+        if (action === "close") {
+          this._setBoth(this._config.close_top, this._config.close_bottom);
+          return;
+        }
+        if (action === "stop") {
+          this._stopBoth();
+          return;
+        }
+        if (action === "preset") {
+          const idx = Number(btn.dataset.index || -1);
+          const preset = this._visiblePresets && this._visiblePresets[idx];
+          if (preset) this._setBoth(preset.top, preset.bottom);
+        }
       });
 
       this.shadowRoot.getElementById("scene").addEventListener("click", (ev) => {
@@ -265,6 +278,85 @@ class HoneycombCurtainCard extends HTMLElement {
     this.shadowRoot.getElementById("top-pos").textContent = `${Math.round(topPos)}%`;
     this.shadowRoot.getElementById("bottom-pos").textContent = `${Math.round(bottomPos)}%`;
     this.shadowRoot.getElementById("status-text").textContent = this._statusText(topEntity, bottomEntity);
+
+    this._renderActions();
+  }
+
+  _normalizeConfig(config) {
+    const defaults = {
+      name: "",
+      tap_action: "nearest",
+      open_top: 0,
+      open_bottom: 100,
+      close_top: 0,
+      close_bottom: 0,
+      presets: [
+        { name: "Midden", top: 46, bottom: 15, enabled: true },
+        { name: "Onderkant gesloten", top: 46, bottom: 0, enabled: true },
+      ],
+    };
+
+    const merged = {
+      ...defaults,
+      ...config,
+    };
+
+    merged.open_top = this._sanitizePosition(merged.open_top, defaults.open_top);
+    merged.open_bottom = this._sanitizePosition(merged.open_bottom, defaults.open_bottom);
+    merged.close_top = this._sanitizePosition(merged.close_top, defaults.close_top);
+    merged.close_bottom = this._sanitizePosition(merged.close_bottom, defaults.close_bottom);
+
+    const rawPresets = Array.isArray(config.presets) ? config.presets : defaults.presets;
+    merged.presets = rawPresets.map((preset, idx) => this._normalizePreset(preset, defaults.presets[idx] || {}));
+
+    return merged;
+  }
+
+  _normalizePreset(preset, fallback) {
+    const base = {
+      name: typeof fallback.name === "string" ? fallback.name : "Stand",
+      top: this._sanitizePosition(fallback.top, 0),
+      bottom: this._sanitizePosition(fallback.bottom, 0),
+      enabled: fallback.enabled !== false,
+    };
+
+    if (!preset || typeof preset !== "object") return { ...base };
+    return {
+      name: typeof preset.name === "string" ? preset.name : base.name,
+      top: this._sanitizePosition(preset.top, base.top),
+      bottom: this._sanitizePosition(preset.bottom, base.bottom),
+      enabled: preset.enabled !== false,
+    };
+  }
+
+  _sanitizePosition(value, fallback) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return fallback;
+    return Math.max(0, Math.min(Math.round(num), 100));
+  }
+
+  _renderActions() {
+    if (!this._actionsEl) return;
+    const presets = Array.isArray(this._config.presets)
+      ? this._config.presets.filter((p) => p && p.enabled !== false)
+      : [];
+    this._visiblePresets = presets;
+
+    const buttons = [
+      { action: "open", label: "Openen" },
+      { action: "stop", label: "Stop" },
+      { action: "close", label: "Sluiten" },
+      ...presets.map((preset, index) => ({
+        action: "preset",
+        label: preset.name || `Stand ${index + 1}`,
+        index,
+      })),
+    ];
+
+    this._actionsEl.innerHTML = buttons.map((btn) => {
+      const indexAttr = typeof btn.index === "number" ? ` data-index="${btn.index}"` : "";
+      return `<button class="btn" data-action="${btn.action}"${indexAttr}>${btn.label}</button>`;
+    }).join("");
   }
 
   _getPosition(entity, fallback) {
@@ -365,7 +457,19 @@ customElements.define("honeycomb-curtain-card", HoneycombCurtainCard);
 
 class HoneycombCurtainCardEditor extends HTMLElement {
   setConfig(config) {
-    this._config = { ...config };
+    this._config = {
+      name: "",
+      open_top: 0,
+      open_bottom: 100,
+      close_top: 0,
+      close_bottom: 0,
+      presets: [
+        { name: "Midden", top: 46, bottom: 15, enabled: true },
+        { name: "Onderkant gesloten", top: 46, bottom: 0, enabled: true },
+      ],
+      ...config,
+    };
+    if (!Array.isArray(this._config.presets)) this._config.presets = [];
     this._render();
   }
 
@@ -399,6 +503,27 @@ class HoneycombCurtainCardEditor extends HTMLElement {
             background: var(--card-background-color, #fff);
             color: var(--primary-text-color);
           }
+          .split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .preset {
+            display: grid;
+            grid-template-columns: 1.4fr 0.7fr 0.7fr auto auto;
+            gap: 6px;
+            align-items: center;
+          }
+          .preset input[type="text"] {
+            width: 100%;
+          }
+          .mini {
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            background: var(--card-background-color, #fff);
+            cursor: pointer;
+          }
         </style>
         <div class="form">
           <div class="row">
@@ -412,6 +537,25 @@ class HoneycombCurtainCardEditor extends HTMLElement {
           <div class="row">
             <label for="cover_bottom">Onderste motor (cover)</label>
             <select id="cover_bottom"></select>
+          </div>
+          <div class="row">
+            <label>Openen positie</label>
+            <div class="split">
+              <input id="open_top" type="number" min="0" max="100" placeholder="Boven" />
+              <input id="open_bottom" type="number" min="0" max="100" placeholder="Onder" />
+            </div>
+          </div>
+          <div class="row">
+            <label>Sluiten positie</label>
+            <div class="split">
+              <input id="close_top" type="number" min="0" max="100" placeholder="Boven" />
+              <input id="close_bottom" type="number" min="0" max="100" placeholder="Onder" />
+            </div>
+          </div>
+          <div class="row">
+            <label>Extra standen</label>
+            <div id="presets"></div>
+            <button id="add-preset" class="mini" type="button">Stand toevoegen</button>
           </div>
         </div>
       `;
@@ -427,6 +571,29 @@ class HoneycombCurtainCardEditor extends HTMLElement {
       this.shadowRoot.getElementById("cover_bottom").addEventListener("change", (e) => {
         this._updateConfig({ cover_bottom: e.target.value });
       });
+
+
+      this.shadowRoot.getElementById("open_top").addEventListener("input", (e) => {
+        this._updateConfig({ open_top: Number(e.target.value) });
+      });
+
+      this.shadowRoot.getElementById("open_bottom").addEventListener("input", (e) => {
+        this._updateConfig({ open_bottom: Number(e.target.value) });
+      });
+
+      this.shadowRoot.getElementById("close_top").addEventListener("input", (e) => {
+        this._updateConfig({ close_top: Number(e.target.value) });
+      });
+
+      this.shadowRoot.getElementById("close_bottom").addEventListener("input", (e) => {
+        this._updateConfig({ close_bottom: Number(e.target.value) });
+      });
+
+      this.shadowRoot.getElementById("add-preset").addEventListener("click", () => {
+        const presets = Array.isArray(this._config.presets) ? [...this._config.presets] : [];
+        presets.push({ name: "Nieuwe stand", top: 0, bottom: 0, enabled: true });
+        this._updateConfig({ presets });
+      });
     }
 
     const nameInput = this.shadowRoot.getElementById("name");
@@ -441,6 +608,82 @@ class HoneycombCurtainCardEditor extends HTMLElement {
 
     this._fillSelect(topSelect, coverOptions, this._config.cover_top || "");
     this._fillSelect(bottomSelect, coverOptions, this._config.cover_bottom || "");
+
+    this.shadowRoot.getElementById("open_top").value = this._config.open_top ?? 0;
+    this.shadowRoot.getElementById("open_bottom").value = this._config.open_bottom ?? 0;
+    this.shadowRoot.getElementById("close_top").value = this._config.close_top ?? 0;
+    this.shadowRoot.getElementById("close_bottom").value = this._config.close_bottom ?? 0;
+
+    this._renderPresets();
+  }
+
+  _renderPresets() {
+    const container = this.shadowRoot.getElementById("presets");
+    if (!container) return;
+    container.innerHTML = "";
+    const presets = Array.isArray(this._config.presets) ? this._config.presets : [];
+
+    presets.forEach((preset, index) => {
+      const row = document.createElement("div");
+      row.className = "preset";
+
+      const name = document.createElement("input");
+      name.type = "text";
+      name.value = preset.name || "Stand";
+      name.addEventListener("input", (e) => {
+        const next = [...presets];
+        next[index] = { ...next[index], name: e.target.value };
+        this._updateConfig({ presets: next });
+      });
+
+      const top = document.createElement("input");
+      top.type = "number";
+      top.min = "0";
+      top.max = "100";
+      top.value = preset.top ?? 0;
+      top.addEventListener("input", (e) => {
+        const next = [...presets];
+        next[index] = { ...next[index], top: Number(e.target.value) };
+        this._updateConfig({ presets: next });
+      });
+
+      const bottom = document.createElement("input");
+      bottom.type = "number";
+      bottom.min = "0";
+      bottom.max = "100";
+      bottom.value = preset.bottom ?? 0;
+      bottom.addEventListener("input", (e) => {
+        const next = [...presets];
+        next[index] = { ...next[index], bottom: Number(e.target.value) };
+        this._updateConfig({ presets: next });
+      });
+
+      const enabled = document.createElement("input");
+      enabled.type = "checkbox";
+      enabled.checked = preset.enabled !== false;
+      enabled.addEventListener("change", (e) => {
+        const next = [...presets];
+        next[index] = { ...next[index], enabled: e.target.checked };
+        this._updateConfig({ presets: next });
+      });
+
+      const remove = document.createElement("button");
+      remove.className = "mini";
+      remove.type = "button";
+      remove.textContent = "Verwijder";
+      remove.addEventListener("click", () => {
+        const next = [...presets];
+        next.splice(index, 1);
+        this._updateConfig({ presets: next });
+      });
+
+      row.appendChild(name);
+      row.appendChild(top);
+      row.appendChild(bottom);
+      row.appendChild(enabled);
+      row.appendChild(remove);
+      container.appendChild(row);
+    });
   }
 
   _fillSelect(selectEl, options, selected) {
