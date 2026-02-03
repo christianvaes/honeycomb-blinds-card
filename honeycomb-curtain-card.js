@@ -580,6 +580,7 @@ class HoneycombCurtainCardEditor extends HTMLElement {
             color: var(--secondary-text-color);
           }
           ha-entity-picker,
+          ha-entity-picker,
           ha-textfield {
             width: 100%;
           }
@@ -607,10 +608,10 @@ class HoneycombCurtainCardEditor extends HTMLElement {
             <ha-textfield id="name" label=""></ha-textfield>
           </div>
           <div class="row">
-            <ha-entity-picker id="cover_top" label=""></ha-entity-picker>
+            <ha-entity-picker id="cover_top" label="Top motor" include-domains="cover"></ha-entity-picker>
           </div>
           <div class="row">
-            <ha-entity-picker id="cover_bottom" label=""></ha-entity-picker>
+            <ha-entity-picker id="cover_bottom" label="Bottom motor" include-domains="cover"></ha-entity-picker>
           </div>
           <div class="row">
             <label id="label-open">Open position</label>
@@ -677,8 +678,8 @@ class HoneycombCurtainCardEditor extends HTMLElement {
 
     topPicker.hass = this._hass;
     bottomPicker.hass = this._hass;
-    topPicker.includeDomains = ["cover"];
-    bottomPicker.includeDomains = ["cover"];
+    if (topPicker.includeDomains) topPicker.includeDomains = ["cover"];
+    if (bottomPicker.includeDomains) bottomPicker.includeDomains = ["cover"];
     if (topPicker.value !== (this._config.cover_top || "")) topPicker.value = this._config.cover_top || "";
     if (bottomPicker.value !== (this._config.cover_bottom || "")) bottomPicker.value = this._config.cover_bottom || "";
 
