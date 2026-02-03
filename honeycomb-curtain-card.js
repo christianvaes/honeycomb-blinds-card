@@ -213,17 +213,22 @@ class HoneycombCurtainCard extends HTMLElement {
             margin-top: 14px;
           }
 
-          .btn {
+          .action-btn {
+            position: relative;
             flex: 1 1 120px;
-            padding: 10px 12px;
+            padding: 10px 14px;
             border-radius: var(--ha-card-border-radius, 12px);
             border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.2));
             background: var(--primary-color);
             color: var(--text-primary-color, #ffffff);
             font-weight: 600;
             cursor: pointer;
-            box-shadow: none;
+            overflow: hidden;
             transition: transform 0.05s ease, box-shadow 0.2s ease;
+          }
+
+          .action-btn ha-ripple {
+            color: currentColor;
           }
 
           .btn:active {
@@ -237,6 +242,7 @@ class HoneycombCurtainCard extends HTMLElement {
             color: var(--secondary-text-color);
           }
         </style>
+        <ha-style></ha-style>
         <ha-card>
           <div class="card">
             <div class="title" id="title"></div>
@@ -399,7 +405,7 @@ class HoneycombCurtainCard extends HTMLElement {
 
     this._actionsEl.innerHTML = buttons.map((btn) => {
       const indexAttr = typeof btn.index === "number" ? ` data-index="${btn.index}"` : "";
-      return `<button class="btn" data-action="${btn.action}"${indexAttr}>${btn.label}</button>`;
+      return `<button type="button" class="action-btn" data-action="${btn.action}"${indexAttr}>${btn.label}<ha-ripple aria-hidden="true"></ha-ripple></button>`;
     }).join("");
   }
 
