@@ -67,35 +67,6 @@ class HoneycombCurtainCard extends HTMLElement {
     };
   }
 
-  _ensureEntityPickers() {
-    const form = this.shadowRoot && this.shadowRoot.querySelector(".form");
-    if (!form) return;
-    if (this.shadowRoot.getElementById("cover_top") && this.shadowRoot.getElementById("cover_bottom")) return;
-
-    const rows = form.querySelectorAll(".row");
-    const insertAfter = rows.length ? rows[0] : null; // after name row
-
-    const makeRow = (id) => {
-      const row = document.createElement("div");
-      row.className = "row";
-      const picker = document.createElement("ha-entity-picker");
-      picker.id = id;
-      row.appendChild(picker);
-      return row;
-    };
-
-    const topRow = makeRow("cover_top");
-    const bottomRow = makeRow("cover_bottom");
-
-    if (insertAfter && insertAfter.parentNode) {
-      insertAfter.parentNode.insertBefore(bottomRow, insertAfter.nextSibling);
-      insertAfter.parentNode.insertBefore(topRow, insertAfter.nextSibling);
-    } else {
-      form.prepend(bottomRow);
-      form.prepend(topRow);
-    }
-  }
-
   _render() {
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
@@ -590,35 +561,6 @@ class HoneycombCurtainCardEditor extends HTMLElement {
     this._render();
   }
 
-  _ensureEntityPickers() {
-    const form = this.shadowRoot && this.shadowRoot.querySelector(".form");
-    if (!form) return;
-    if (this.shadowRoot.getElementById("cover_top") && this.shadowRoot.getElementById("cover_bottom")) return;
-
-    const rows = form.querySelectorAll(".row");
-    const insertAfter = rows.length ? rows[0] : null; // after name row
-
-    const makeRow = (id) => {
-      const row = document.createElement("div");
-      row.className = "row";
-      const picker = document.createElement("ha-entity-picker");
-      picker.id = id;
-      row.appendChild(picker);
-      return row;
-    };
-
-    const topRow = makeRow("cover_top");
-    const bottomRow = makeRow("cover_bottom");
-
-    if (insertAfter && insertAfter.parentNode) {
-      insertAfter.parentNode.insertBefore(bottomRow, insertAfter.nextSibling);
-      insertAfter.parentNode.insertBefore(topRow, insertAfter.nextSibling);
-    } else {
-      form.prepend(bottomRow);
-      form.prepend(topRow);
-    }
-  }
-
   _render() {
     if (!this._hass || !this._config) return;
     if (!this.shadowRoot) {
@@ -637,7 +579,6 @@ class HoneycombCurtainCardEditor extends HTMLElement {
             font-size: 0.9rem;
             color: var(--secondary-text-color);
           }
-          ha-entity-picker,
           ha-entity-picker,
           ha-textfield {
             width: 100%;
@@ -665,12 +606,8 @@ class HoneycombCurtainCardEditor extends HTMLElement {
           <div class="row">
             <ha-textfield id="name" label=""></ha-textfield>
           </div>
-          <div class="row">
-            <ha-entity-picker id="cover_top" label="Top motor" include-domains="cover"></ha-entity-picker>
-          </div>
-          <div class="row">
-            <ha-entity-picker id="cover_bottom" label="Bottom motor" include-domains="cover"></ha-entity-picker>
-          </div>
+          <div class="row" id="row-cover_top"></div>
+          <div class="row" id="row-cover_bottom"></div>
           <div class="row">
             <label id="label-open">Open position</label>
             <div class="split">
@@ -697,14 +634,6 @@ class HoneycombCurtainCardEditor extends HTMLElement {
         this._updateConfig({ name: e.target.value });
       });
 
-      this.shadowRoot.getElementById("cover_top").addEventListener("value-changed", (e) => {
-        this._updateConfig({ cover_top: e.detail.value });
-      });
-
-      this.shadowRoot.getElementById("cover_bottom").addEventListener("value-changed", (e) => {
-        this._updateConfig({ cover_bottom: e.detail.value });
-      });
-
       this.shadowRoot.getElementById("open_top").addEventListener("input", (e) => {
         this._updateConfig({ open_top: Number(e.target.value) });
       });
@@ -728,20 +657,11 @@ class HoneycombCurtainCardEditor extends HTMLElement {
       });
     }
 
-    this._ensureEntityPickers();
-
     const nameInput = this.shadowRoot.getElementById("name");
     if (nameInput) nameInput.value = this._config.name || "";
 
-    const topPicker = this.shadowRoot.getElementById("cover_top");
-    const bottomPicker = this.shadowRoot.getElementById("cover_bottom");
-
-    topPicker.hass = this._hass;
-    bottomPicker.hass = this._hass;
-    if (topPicker.includeDomains) topPicker.includeDomains = ["cover"];
-    if (bottomPicker.includeDomains) bottomPicker.includeDomains = ["cover"];
-    if (topPicker.value !== (this._config.cover_top || "")) topPicker.value = this._config.cover_top || "";
-    if (bottomPicker.value !== (this._config.cover_bottom || "")) bottomPicker.value = this._config.cover_bottom || "";
+    this._renderEntitySelector("cover_top", this._t("top_motor"), this._config.cover_top || "");
+    this._renderEntitySelector("cover_bottom", this._t("bottom_motor"), this._config.cover_bottom || "");
 
     this.shadowRoot.getElementById("open_top").value = this._config.open_top ?? 0;
     this.shadowRoot.getElementById("open_bottom").value = this._config.open_bottom ?? 0;
@@ -755,8 +675,6 @@ class HoneycombCurtainCardEditor extends HTMLElement {
 
     this._renderPresets();
     this.shadowRoot.getElementById("name").label = this._t("name");
-    this.shadowRoot.getElementById("cover_top").label = this._t("top_motor");
-    this.shadowRoot.getElementById("cover_bottom").label = this._t("bottom_motor");
     this.shadowRoot.getElementById("open_top").label = this._t("top");
     this.shadowRoot.getElementById("open_bottom").label = this._t("bottom");
     this.shadowRoot.getElementById("close_top").label = this._t("top");
