@@ -47,3 +47,7 @@ cover_bottom: cover.bottom_motor
 Default extra presets:
 - `Middle`: top `46`, bottom `15`
 - `Bottom closed`: top `46`, bottom `0`
+
+## Preview
+
+![Honeycomb Curtain Card - Middle preset](preview-middle.svg)
