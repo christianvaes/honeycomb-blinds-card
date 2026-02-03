@@ -618,12 +618,27 @@ class HoneycombCurtainCardEditor extends HTMLElement {
     ];
   }
 
+  _toColorArray(value) {
+    if (Array.isArray(value) && value.length === 3) return value;
+    if (typeof value === "string") {
+      const m = /^#?([0-9a-fA-F]{6})$/.exec(value.trim());
+      if (m) {
+        const v = m[1];
+        const r = parseInt(v.slice(0, 2), 16);
+        const g = parseInt(v.slice(2, 4), 16);
+        const b = parseInt(v.slice(4, 6), 16);
+        return [r, g, b];
+      }
+    }
+    return [185, 163, 139];
+  }
+
   _formData() {
     return {
       name: this._config.name || "",
       cover_top: this._config.cover_top || "",
       cover_bottom: this._config.cover_bottom || "",
-      shade_color: this._config.shade_color || "#b9a38b",
+      shade_color: this._toColorArray(this._config.shade_color || "#b9a38b"),
     };
   }
 
