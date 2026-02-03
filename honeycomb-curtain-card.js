@@ -568,22 +568,22 @@ class HoneycombCurtainCardEditor extends HTMLElement {
       { name: "cover_bottom", label: this._t("bottom_motor"), selector: { entity: { domain: "cover" } } },
       {
         name: "open_top",
-        label: `${this._t("open_position")} - ${this._t("top")}`,
+        label: `${this._t("open_position")} (${this._t("top")})`,
         selector: { number: { min: 0, max: 100, mode: "box" } },
       },
       {
         name: "open_bottom",
-        label: `${this._t("open_position")} - ${this._t("bottom")}`,
+        label: `${this._t("open_position")} (${this._t("bottom")})`,
         selector: { number: { min: 0, max: 100, mode: "box" } },
       },
       {
         name: "close_top",
-        label: `${this._t("close_position")} - ${this._t("top")}`,
+        label: `${this._t("close_position")} (${this._t("top")})`,
         selector: { number: { min: 0, max: 100, mode: "box" } },
       },
       {
         name: "close_bottom",
-        label: `${this._t("close_position")} - ${this._t("bottom")}`,
+        label: `${this._t("close_position")} (${this._t("bottom")})`,
         selector: { number: { min: 0, max: 100, mode: "box" } },
       },
     ];
@@ -659,6 +659,7 @@ class HoneycombCurtainCardEditor extends HTMLElement {
 
     const form = this.shadowRoot.getElementById("ha-form");
     form.hass = this._hass;
+    form.computeLabel = (schema) => schema.label || schema.name;
     form.schema = this._formSchema();
     form.data = this._formData();
 
