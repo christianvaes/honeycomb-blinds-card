@@ -67,6 +67,43 @@ class HoneycombCurtainCard extends HTMLElement {
     };
   }
 
+  _resolveShadeColors() {
+    const fallback = { base: "#b9a38b", dark: "#a89178" };
+    const input = this._config && this._config.shade_color;
+    if (!input) return fallback;
+
+    if (Array.isArray(input) && input.length === 3) {
+      const [r, g, b] = input.map((v) => Math.max(0, Math.min(Number(v) || 0, 255)));
+      const dark = [r, g, b].map((v) => Math.max(0, Math.round(v * 0.9)));
+      return {
+        base: `rgb(${r}, ${g}, ${b})`,
+        dark: `rgb(${dark[0]}, ${dark[1]}, ${dark[2]})`,
+      };
+    }
+
+    if (typeof input === "string") {
+      const hex = input.trim();
+      const m = /^#?([0-9a-fA-F]{6})$/.exec(hex);
+      if (m) {
+        const val = m[1];
+        const r = int(val[0:2]);
+        const g = int(val[2:4]);
+        const b = int(val[4:6]);
+        const dark = [r, g, b].map((v) => Math.max(0, Math.round(v * 0.9)));
+        return {
+          base: `rgb(${r}, ${g}, ${b})`,
+          dark: `rgb(${dark[0]}, ${dark[1]}, ${dark[2]})`,
+        };
+      }
+    }
+
+    return fallback;
+
+    function int(h) {
+      return parseInt(h, 16);
+    }
+  }
+
   _render() {
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
@@ -314,8 +351,11 @@ class HoneycombCurtainCard extends HTMLElement {
     if (bottomY < topY) bottomY = topY;
 
     const scene = this.shadowRoot.getElementById("scene");
+    const shades = this._resolveShadeColors();
     scene.style.setProperty("--top-y", `${topY}px`);
     scene.style.setProperty("--bottom-y", `${bottomY}px`);
+    scene.style.setProperty("--hc-taupe", shades.base);
+    scene.style.setProperty("--hc-taupe-dark", shades.dark);
 
     this.shadowRoot.getElementById("top-pos").textContent = `${Math.round(topPos)}%`;
     this.shadowRoot.getElementById("bottom-pos").textContent = `${Math.round(bottomPos)}%`;
@@ -340,6 +380,8 @@ class HoneycombCurtainCard extends HTMLElement {
         { name: "Midden", top: 46, bottom: 15, enabled: true },
         { name: "Onderkant gesloten", top: 46, bottom: 0, enabled: true },
       ],
+      shade_color: "#b9a38b",
+      shade_color: "#b9a38b",
     };
 
     const merged = {
@@ -510,6 +552,7 @@ class HoneycombCurtainCardEditor extends HTMLElement {
         name: "Name",
         top_motor: "Top motor",
         bottom_motor: "Bottom motor",
+        shade_color: "Shade color",
         open_position: "Open position",
         close_position: "Close position",
         presets: "Extra presets",
@@ -525,6 +568,7 @@ class HoneycombCurtainCardEditor extends HTMLElement {
         name: "Naam",
         top_motor: "Bovenste motor",
         bottom_motor: "Onderste motor",
+        shade_color: "Kleur gordijn",
         open_position: "Openen positie",
         close_position: "Sluiten positie",
         presets: "Extra standen",
@@ -552,6 +596,8 @@ class HoneycombCurtainCardEditor extends HTMLElement {
         { name: "Midden", top: 46, bottom: 15, enabled: true },
         { name: "Onderkant gesloten", top: 46, bottom: 0, enabled: true },
       ],
+      shade_color: "#b9a38b",
+      shade_color: "#b9a38b",
       ...config,
     };
     if (!Array.isArray(this._config.presets)) this._config.presets = [];
@@ -568,6 +614,7 @@ class HoneycombCurtainCardEditor extends HTMLElement {
       { name: "name", label: this._t("name"), selector: { text: {} } },
       { name: "cover_top", label: this._t("top_motor"), selector: { entity: { domain: "cover" } } },
       { name: "cover_bottom", label: this._t("bottom_motor"), selector: { entity: { domain: "cover" } } },
+      { name: "shade_color", label: this._t("shade_color"), selector: { color_rgb: {} } },
     ];
   }
 
@@ -576,7 +623,45 @@ class HoneycombCurtainCardEditor extends HTMLElement {
       name: this._config.name || "",
       cover_top: this._config.cover_top || "",
       cover_bottom: this._config.cover_bottom || "",
+      shade_color: this._config.shade_color || "#b9a38b",
     };
+  }
+
+  _resolveShadeColors() {
+    const fallback = { base: "#b9a38b", dark: "#a89178" };
+    const input = this._config && this._config.shade_color;
+    if (!input) return fallback;
+
+    if (Array.isArray(input) && input.length === 3) {
+      const [r, g, b] = input.map((v) => Math.max(0, Math.min(Number(v) || 0, 255)));
+      const dark = [r, g, b].map((v) => Math.max(0, Math.round(v * 0.9)));
+      return {
+        base: `rgb(${r}, ${g}, ${b})`,
+        dark: `rgb(${dark[0]}, ${dark[1]}, ${dark[2]})`,
+      };
+    }
+
+    if (typeof input === "string") {
+      const hex = input.trim();
+      const m = /^#?([0-9a-fA-F]{6})$/.exec(hex);
+      if (m) {
+        const val = m[1];
+        const r = int(val[0:2]);
+        const g = int(val[2:4]);
+        const b = int(val[4:6]);
+        const dark = [r, g, b].map((v) => Math.max(0, Math.round(v * 0.9)));
+        return {
+          base: `rgb(${r}, ${g}, ${b})`,
+          dark: `rgb(${dark[0]}, ${dark[1]}, ${dark[2]})`,
+        };
+      }
+    }
+
+    return fallback;
+
+    function int(h) {
+      return parseInt(h, 16);
+    }
   }
 
   _render() {
