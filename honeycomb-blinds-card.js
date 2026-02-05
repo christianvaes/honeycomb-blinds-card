@@ -359,7 +359,7 @@ class HoneycombBlindsCard extends HTMLElement {
 
     this.shadowRoot.getElementById("top-pos").textContent = `${Math.round(topPos)}%`;
     this.shadowRoot.getElementById("bottom-pos").textContent = `${Math.round(bottomPos)}%`;
-    this.shadowRoot.getElementById("status-text").textContent = this._statusText(topEntity, bottomEntity);
+    this.shadowRoot.getElementById("status-text").textContent = this._statusText(topEntity, bottomEntity, topPos, bottomPos);
 
     this._renderActions();
 
@@ -459,12 +459,18 @@ class HoneycombBlindsCard extends HTMLElement {
     return fallback;
   }
 
-  _statusText(topEntity, bottomEntity) {
+  _statusText(topEntity, bottomEntity, topPos, bottomPos) {
     if (!topEntity || !bottomEntity) return "-";
     if (topEntity.state === "opening" || bottomEntity.state === "opening") return this._t("opening");
     if (topEntity.state === "closing" || bottomEntity.state === "closing") return this._t("closing");
-    if (topEntity.state === "open" && bottomEntity.state === "open") return this._t("open_state");
-    if (topEntity.state === "closed" && bottomEntity.state === "closed") return this._t("closed_state");
+
+    const top = typeof topPos === "number" ? topPos : 0;
+    const bottom = typeof bottomPos === "number" ? bottomPos : 0;
+    const open = top <= 1 && bottom >= 99;
+    const closed = top <= 1 && bottom <= 1;
+
+    if (open) return this._t("open_state");
+    if (closed) return this._t("closed_state");
     return this._t("partial");
   }
 
