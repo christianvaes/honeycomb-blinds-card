@@ -16,6 +16,15 @@ class HoneycombBlindsCard extends HTMLElement {
     return 3;
   }
 
+  getGridOptions() {
+    return {
+      rows: 4,
+      columns: 6,
+      min_rows: 3,
+      min_columns: 3,
+    };
+  }
+
   _t(key) {
     const lang = (this._hass && this._hass.locale && this._hass.locale.language) ||
       (this._hass && this._hass.language) || "en";
@@ -476,7 +485,8 @@ class HoneycombBlindsCard extends HTMLElement {
       const selectedClass = selected ? " selected" : "";
       const ariaPressed = selected ? "true" : "false";
       const disabledAttr = selected ? " disabled aria-disabled=\"true\"" : "";
-      return `<button type="button" class="button${selectedClass}" data-action="${btn.action}" aria-pressed="${ariaPressed}"${disabledAttr}${indexAttr}>${btn.label}<ha-ripple aria-hidden="true"></ha-ripple></button>`;
+      const safeLabel = this._escapeHtml(btn.label);
+      return `<button type="button" class="button${selectedClass}" data-action="${btn.action}" aria-pressed="${ariaPressed}"${disabledAttr}${indexAttr}>${safeLabel}<ha-ripple aria-hidden="true"></ha-ripple></button>`;
     }).join("");
   }
 
@@ -489,6 +499,16 @@ class HoneycombBlindsCard extends HTMLElement {
     if (typeof targetTop !== "number" || typeof targetBottom !== "number") return false;
     return this._sanitizePosition(currentTop, -1) === this._sanitizePosition(targetTop, -2) &&
       this._sanitizePosition(currentBottom, -1) === this._sanitizePosition(targetBottom, -2);
+  }
+
+  _escapeHtml(text) {
+    const value = String(text ?? "");
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
   }
 
   _getPosition(entity, fallback) {
@@ -876,5 +896,7 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "honeycomb-blinds-card",
   name: "Honeycomb Blinds Card",
+  preview: true,
   description: "Control a two-motor honeycomb blinds (top + bottom).",
+  documentationURL: "https://github.com/christianvaes/honeycomb-blinds-card",
 });
