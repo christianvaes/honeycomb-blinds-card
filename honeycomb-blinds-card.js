@@ -18,8 +18,10 @@ class HoneycombBlindsCard extends HTMLElement {
 
   getGridOptions() {
     return {
-      columns: "full",
+      columns: 6,
       min_columns: 6,
+      rows: 9,
+      min_rows: 7,
     };
   }
 
