@@ -260,6 +260,12 @@ class HoneycombBlindsCard extends HTMLElement {
             transition: transform 0.05s ease, box-shadow 0.2s ease;
           }
 
+          .button.selected {
+            border-color: var(--primary-color);
+            box-shadow: inset 0 0 0 1px var(--primary-color);
+            background: var(--ha-card-background, var(--card-background-color, #fff));
+          }
+
           .button ha-ripple {
             color: currentColor;
           }
@@ -361,7 +367,7 @@ class HoneycombBlindsCard extends HTMLElement {
     this.shadowRoot.getElementById("bottom-pos").textContent = `${Math.round(bottomPos)}%`;
     this.shadowRoot.getElementById("status-text").textContent = this._statusText(topEntity, bottomEntity, topPos, bottomPos);
 
-    this._renderActions();
+    this._renderActions(topPos, bottomPos);
 
     this.shadowRoot.getElementById("label-top").textContent = this._t("topmotor");
     this.shadowRoot.getElementById("label-bottom").textContent = this._t("bottommotor");
@@ -423,7 +429,7 @@ class HoneycombBlindsCard extends HTMLElement {
     return Math.max(0, Math.min(Math.round(num), 100));
   }
 
-  _renderActions() {
+  _renderActions(currentTop, currentBottom) {
     if (!this._actionsEl) return;
     const presets = Array.isArray(this._config.presets)
       ? this._config.presets.filter((p) => p && p.enabled !== false)
@@ -431,20 +437,41 @@ class HoneycombBlindsCard extends HTMLElement {
     this._visiblePresets = presets;
 
     const buttons = [
-      { action: "open", label: this._t("open") },
+      {
+        action: "open",
+        label: this._t("open"),
+        top: this._config.open_top,
+        bottom: this._config.open_bottom,
+      },
       { action: "stop", label: this._t("stop") },
-      { action: "close", label: this._t("close") },
+      {
+        action: "close",
+        label: this._t("close"),
+        top: this._config.close_top,
+        bottom: this._config.close_bottom,
+      },
       ...presets.map((preset, index) => ({
         action: "preset",
         label: preset.name || `${this._t("preset")} ${index + 1}`,
         index,
+        top: preset.top,
+        bottom: preset.bottom,
       })),
     ];
 
     this._actionsEl.innerHTML = buttons.map((btn) => {
+      const selected = this._positionsMatch(currentTop, currentBottom, btn.top, btn.bottom);
       const indexAttr = typeof btn.index === "number" ? ` data-index="${btn.index}"` : "";
-      return `<button type="button" class="button" data-action="${btn.action}"${indexAttr}>${btn.label}<ha-ripple aria-hidden="true"></ha-ripple></button>`;
+      const selectedClass = selected ? " selected" : "";
+      const ariaPressed = selected ? "true" : "false";
+      return `<button type="button" class="button${selectedClass}" data-action="${btn.action}" aria-pressed="${ariaPressed}"${indexAttr}>${btn.label}<ha-ripple aria-hidden="true"></ha-ripple></button>`;
     }).join("");
+  }
+
+  _positionsMatch(currentTop, currentBottom, targetTop, targetBottom) {
+    if (typeof targetTop !== "number" || typeof targetBottom !== "number") return false;
+    return this._sanitizePosition(currentTop, -1) === this._sanitizePosition(targetTop, -2) &&
+      this._sanitizePosition(currentBottom, -1) === this._sanitizePosition(targetBottom, -2);
   }
 
   _getPosition(entity, fallback) {
