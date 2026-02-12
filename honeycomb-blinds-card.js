@@ -266,6 +266,18 @@ class HoneycombBlindsCard extends HTMLElement {
             background: var(--ha-card-background, var(--card-background-color, #fff));
           }
 
+          .button:disabled {
+            opacity: 0.55;
+            cursor: default;
+            pointer-events: none;
+          }
+
+          .button.selected:disabled {
+            border-color: var(--primary-color);
+            box-shadow: inset 0 0 0 1px var(--primary-color);
+            opacity: 0.7;
+          }
+
           .button ha-ripple {
             color: currentColor;
           }
@@ -464,7 +476,8 @@ class HoneycombBlindsCard extends HTMLElement {
       const indexAttr = typeof btn.index === "number" ? ` data-index="${btn.index}"` : "";
       const selectedClass = selected ? " selected" : "";
       const ariaPressed = selected ? "true" : "false";
-      return `<button type="button" class="button${selectedClass}" data-action="${btn.action}" aria-pressed="${ariaPressed}"${indexAttr}>${btn.label}<ha-ripple aria-hidden="true"></ha-ripple></button>`;
+      const disabledAttr = selected ? " disabled aria-disabled=\"true\"" : "";
+      return `<button type="button" class="button${selectedClass}" data-action="${btn.action}" aria-pressed="${ariaPressed}"${disabledAttr}${indexAttr}>${btn.label}<ha-ripple aria-hidden="true"></ha-ripple></button>`;
     }).join("");
   }
 
