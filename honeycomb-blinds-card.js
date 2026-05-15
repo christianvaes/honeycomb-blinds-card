@@ -783,16 +783,17 @@ class HoneycombBlindsCardEditor extends HTMLElement {
             display: grid;
             grid-template-columns: 1.5fr 0.8fr 0.8fr auto;
             gap: 8px;
-            align-items: end;
+            align-items: center;
           }
           .mini {
-            padding: 8px 12px;
+            padding: 6px 12px;
             border-radius: var(--ha-card-border-radius, 12px);
             border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.2));
             background: var(--card-background-color, #fff);
             color: var(--primary-text-color);
             font: inherit;
             cursor: pointer;
+            white-space: nowrap;
           }
         </style>
         <div class="form">
