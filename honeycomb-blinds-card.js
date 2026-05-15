@@ -692,6 +692,7 @@ class HoneycombBlindsCardEditor extends HTMLElement {
     const num = { number: { min: 0, max: 100, mode: "box" } };
     return [
       {
+        name: "top_row",
         type: "grid",
         schema: [
           { name: "open_top", label: `${t("open_position")} (${t("top")})`, selector: num },
@@ -699,6 +700,7 @@ class HoneycombBlindsCardEditor extends HTMLElement {
         ],
       },
       {
+        name: "bottom_row",
         type: "grid",
         schema: [
           { name: "open_bottom", label: `${t("open_position")} (${t("bottom")})`, selector: num },
@@ -714,6 +716,7 @@ class HoneycombBlindsCardEditor extends HTMLElement {
     return [
       { name: "name", label: t("name"), selector: { text: {} } },
       {
+        name: "pos",
         type: "grid",
         schema: [
           { name: "top", label: t("top"), selector: num },
@@ -749,10 +752,14 @@ class HoneycombBlindsCardEditor extends HTMLElement {
 
   _positionsData() {
     return {
-      open_top: this._config.open_top ?? 0,
-      close_top: this._config.close_top ?? 0,
-      open_bottom: this._config.open_bottom ?? 100,
-      close_bottom: this._config.close_bottom ?? 0,
+      top_row: {
+        open_top: this._config.open_top ?? 0,
+        close_top: this._config.close_top ?? 0,
+      },
+      bottom_row: {
+        open_bottom: this._config.open_bottom ?? 100,
+        close_bottom: this._config.close_bottom ?? 0,
+      },
     };
   }
 
@@ -813,7 +820,15 @@ class HoneycombBlindsCardEditor extends HTMLElement {
       });
 
       this.shadowRoot.getElementById("positions-form").addEventListener("value-changed", (e) => {
-        this._updateConfig(e.detail.value);
+        const v = e.detail.value || {};
+        const top = v.top_row || {};
+        const bottom = v.bottom_row || {};
+        this._updateConfig({
+          open_top: Number(top.open_top ?? this._config.open_top ?? 0),
+          close_top: Number(top.close_top ?? this._config.close_top ?? 0),
+          open_bottom: Number(bottom.open_bottom ?? this._config.open_bottom ?? 100),
+          close_bottom: Number(bottom.close_bottom ?? this._config.close_bottom ?? 0),
+        });
       });
 
       this.shadowRoot.getElementById("add-preset").addEventListener("click", () => {
@@ -863,17 +878,17 @@ class HoneycombBlindsCardEditor extends HTMLElement {
       form.schema = schema;
       form.data = {
         name: typeof preset.name === "string" ? preset.name : this._t("preset"),
-        top: preset.top ?? 0,
-        bottom: preset.bottom ?? 0,
+        pos: { top: preset.top ?? 0, bottom: preset.bottom ?? 0 },
       };
       form.addEventListener("value-changed", (e) => {
         const value = e.detail.value || {};
+        const pos = value.pos || {};
         const next = Array.isArray(this._config.presets) ? [...this._config.presets] : [];
         next[index] = {
           ...next[index],
           name: typeof value.name === "string" ? value.name : next[index]?.name,
-          top: Number(value.top) || 0,
-          bottom: Number(value.bottom) || 0,
+          top: Number(pos.top ?? next[index]?.top ?? 0),
+          bottom: Number(pos.bottom ?? next[index]?.bottom ?? 0),
         };
         this._updateConfig({ presets: next });
       });
