@@ -73,5 +73,5 @@
   5. `gh release create vX.Y.Z --target main --title "vX.Y.Z" --notes "..."`.
 
 ## Session Hygiene
-- If a session starts with wrong cwd, switch commands explicitly to this path.
+- Always operate from the repo root (where `package.json` lives).
 - `.claude/` is gitignored — it is local agent state, do not commit.
