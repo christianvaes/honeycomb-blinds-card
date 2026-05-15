@@ -710,20 +710,14 @@ class HoneycombBlindsCardEditor extends HTMLElement {
     ];
   }
 
-  _presetSchema() {
+  _presetFieldSchemas() {
     const t = (k) => this._t(k);
     const num = { number: { min: 0, max: 100, mode: "box" } };
-    return [
-      { name: "name", label: t("name"), selector: { text: {} } },
-      {
-        name: "pos",
-        type: "grid",
-        schema: [
-          { name: "top", label: t("top"), selector: num },
-          { name: "bottom", label: t("bottom"), selector: num },
-        ],
-      },
-    ];
+    return {
+      name:   [{ name: "name",   label: t("name"),   selector: { text: {} } }],
+      top:    [{ name: "top",    label: t("top"),     selector: num }],
+      bottom: [{ name: "bottom", label: t("bottom"),  selector: num }],
+    };
   }
 
   _toColorArray(value) {
@@ -787,7 +781,7 @@ class HoneycombBlindsCardEditor extends HTMLElement {
           }
           .preset {
             display: grid;
-            grid-template-columns: 1fr auto;
+            grid-template-columns: 1.5fr 0.8fr 0.8fr auto;
             gap: 8px;
             align-items: end;
           }
@@ -866,32 +860,35 @@ class HoneycombBlindsCardEditor extends HTMLElement {
     container.innerHTML = "";
     const presets = Array.isArray(this._config.presets) ? this._config.presets : [];
     const computeLabel = (schema) => schema.label || schema.name;
-    const schema = this._presetSchema();
+    const schemas = this._presetFieldSchemas();
 
     presets.forEach((preset, index) => {
       const row = document.createElement("div");
       row.className = "preset";
 
-      const form = document.createElement("ha-form");
-      form.hass = this._hass;
-      form.computeLabel = computeLabel;
-      form.schema = schema;
-      form.data = {
-        name: typeof preset.name === "string" ? preset.name : this._t("preset"),
-        pos: { top: preset.top ?? 0, bottom: preset.bottom ?? 0 },
+      const makeForm = (key, data) => {
+        const f = document.createElement("ha-form");
+        f.hass = this._hass;
+        f.computeLabel = computeLabel;
+        f.schema = schemas[key];
+        f.data = data;
+        f.addEventListener("value-changed", (e) => {
+          const next = Array.isArray(this._config.presets) ? [...this._config.presets] : [];
+          const val = e.detail.value || {};
+          next[index] = {
+            ...next[index],
+            name:   typeof val.name   === "string" ? val.name   : next[index]?.name,
+            top:    "top"    in val ? Number(val.top)    : next[index]?.top,
+            bottom: "bottom" in val ? Number(val.bottom) : next[index]?.bottom,
+          };
+          this._updateConfig({ presets: next });
+        });
+        return f;
       };
-      form.addEventListener("value-changed", (e) => {
-        const value = e.detail.value || {};
-        const pos = value.pos || {};
-        const next = Array.isArray(this._config.presets) ? [...this._config.presets] : [];
-        next[index] = {
-          ...next[index],
-          name: typeof value.name === "string" ? value.name : next[index]?.name,
-          top: Number(pos.top ?? next[index]?.top ?? 0),
-          bottom: Number(pos.bottom ?? next[index]?.bottom ?? 0),
-        };
-        this._updateConfig({ presets: next });
-      });
+
+      row.appendChild(makeForm("name",   { name:   typeof preset.name === "string" ? preset.name : this._t("preset") }));
+      row.appendChild(makeForm("top",    { top:    preset.top    ?? 0 }));
+      row.appendChild(makeForm("bottom", { bottom: preset.bottom ?? 0 }));
 
       const remove = document.createElement("button");
       remove.className = "mini";
@@ -904,7 +901,6 @@ class HoneycombBlindsCardEditor extends HTMLElement {
         this._renderPresets();
       });
 
-      row.appendChild(form);
       row.appendChild(remove);
       container.appendChild(row);
     });
