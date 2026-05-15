@@ -1,7 +1,17 @@
+const MAX_PRESETS = 50;
+const MAX_NAME_LENGTH = 64;
+const COVER_ENTITY_RE = /^cover\.[a-z0-9_]+$/;
+
 class HoneycombBlindsCard extends HTMLElement {
   setConfig(config) {
     if (!config || !config.cover_top || !config.cover_bottom) {
       throw new Error("You must define 'cover_top' and 'cover_bottom'.");
+    }
+    if (!COVER_ENTITY_RE.test(String(config.cover_top))) {
+      throw new Error(`'cover_top' must be a cover entity (got '${config.cover_top}').`);
+    }
+    if (!COVER_ENTITY_RE.test(String(config.cover_bottom))) {
+      throw new Error(`'cover_bottom' must be a cover entity (got '${config.cover_bottom}').`);
     }
     this._config = this._normalizeConfig(config);
   }
@@ -95,9 +105,9 @@ class HoneycombBlindsCard extends HTMLElement {
       const m = /^#?([0-9a-fA-F]{6})$/.exec(hex);
       if (m) {
         const val = m[1];
-        const r = int(val.slice(0, 2));
-        const g = int(val.slice(2, 4));
-        const b = int(val.slice(4, 6));
+        const r = parseInt(val.slice(0, 2), 16);
+        const g = parseInt(val.slice(2, 4), 16);
+        const b = parseInt(val.slice(4, 6), 16);
         const dark = [r, g, b].map((v) => Math.max(0, Math.round(v * 0.9)));
         return {
           base: `rgb(${r}, ${g}, ${b})`,
@@ -107,13 +117,10 @@ class HoneycombBlindsCard extends HTMLElement {
     }
 
     return fallback;
-
-    function int(h) {
-      return parseInt(h, 16);
-    }
   }
 
   _render() {
+    if (!this._hass || !this._config) return;
     if (!this.shadowRoot) {
       this.attachShadow({ mode: "open" });
       this.shadowRoot.innerHTML = `
@@ -416,7 +423,8 @@ class HoneycombBlindsCard extends HTMLElement {
     merged.close_bottom = this._sanitizePosition(merged.close_bottom, defaults.close_bottom);
 
     const rawPresets = Array.isArray(config.presets) ? config.presets : defaults.presets;
-    merged.presets = rawPresets.map((preset, idx) => this._normalizePreset(preset, defaults.presets[idx] || {}));
+    const limited = rawPresets.slice(0, MAX_PRESETS);
+    merged.presets = limited.map((preset, idx) => this._normalizePreset(preset, defaults.presets[idx] || {}));
 
     return merged;
   }
@@ -430,8 +438,9 @@ class HoneycombBlindsCard extends HTMLElement {
     };
 
     if (!preset || typeof preset !== "object") return { ...base };
+    const rawName = typeof preset.name === "string" ? preset.name : base.name;
     return {
-      name: typeof preset.name === "string" ? preset.name : base.name,
+      name: rawName.slice(0, MAX_NAME_LENGTH),
       top: this._sanitizePosition(preset.top, base.top),
       bottom: this._sanitizePosition(preset.bottom, base.bottom),
       enabled: preset.enabled !== false,
@@ -497,8 +506,8 @@ class HoneycombBlindsCard extends HTMLElement {
 
   _positionsMatch(currentTop, currentBottom, targetTop, targetBottom) {
     if (typeof targetTop !== "number" || typeof targetBottom !== "number") return false;
-    return this._sanitizePosition(currentTop, -1) === this._sanitizePosition(targetTop, -2) &&
-      this._sanitizePosition(currentBottom, -1) === this._sanitizePosition(targetBottom, -2);
+    return this._sanitizePosition(currentTop, 0) === this._sanitizePosition(targetTop, 0) &&
+      this._sanitizePosition(currentBottom, 0) === this._sanitizePosition(targetBottom, 0);
   }
 
   _escapeHtml(text) {
@@ -858,8 +867,33 @@ class HoneycombBlindsCardEditor extends HTMLElement {
   _renderPresets() {
     const container = this.shadowRoot.getElementById("presets");
     if (!container) return;
-    container.innerHTML = "";
     const presets = Array.isArray(this._config.presets) ? this._config.presets : [];
+
+    // If row count matches, just update data on existing ha-form elements.
+    // This preserves focus while the user is typing in a preset field.
+    if (this._presetRows && this._presetRows.length === presets.length) {
+      presets.forEach((preset, index) => {
+        const row = this._presetRows[index];
+        if (!row) return;
+        const safeName = typeof preset.name === "string" ? preset.name : this._t("preset");
+        if (row.nameForm.data?.name !== safeName) {
+          row.nameForm.data = { name: safeName };
+        }
+        const topVal = preset.top ?? 0;
+        if (row.topForm.data?.top !== topVal) {
+          row.topForm.data = { top: topVal };
+        }
+        const bottomVal = preset.bottom ?? 0;
+        if (row.bottomForm.data?.bottom !== bottomVal) {
+          row.bottomForm.data = { bottom: bottomVal };
+        }
+      });
+      return;
+    }
+
+    // Length changed (add/remove) — do a full rebuild.
+    container.innerHTML = "";
+    this._presetRows = [];
     const computeLabel = (schema) => schema.label || schema.name;
     const schemas = this._presetFieldSchemas();
 
@@ -887,9 +921,13 @@ class HoneycombBlindsCardEditor extends HTMLElement {
         return f;
       };
 
-      row.appendChild(makeForm("name",   { name:   typeof preset.name === "string" ? preset.name : this._t("preset") }));
-      row.appendChild(makeForm("top",    { top:    preset.top    ?? 0 }));
-      row.appendChild(makeForm("bottom", { bottom: preset.bottom ?? 0 }));
+      const nameForm   = makeForm("name",   { name:   typeof preset.name === "string" ? preset.name : this._t("preset") });
+      const topForm    = makeForm("top",    { top:    preset.top    ?? 0 });
+      const bottomForm = makeForm("bottom", { bottom: preset.bottom ?? 0 });
+
+      row.appendChild(nameForm);
+      row.appendChild(topForm);
+      row.appendChild(bottomForm);
 
       const remove = document.createElement("button");
       remove.className = "mini";
@@ -904,6 +942,8 @@ class HoneycombBlindsCardEditor extends HTMLElement {
 
       row.appendChild(remove);
       container.appendChild(row);
+
+      this._presetRows.push({ row, nameForm, topForm, bottomForm });
     });
   }
 
