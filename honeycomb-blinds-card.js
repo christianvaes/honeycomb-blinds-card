@@ -692,7 +692,6 @@ class HoneycombBlindsCardEditor extends HTMLElement {
     const num = { number: { min: 0, max: 100, mode: "box" } };
     return [
       {
-        name: "_top_row",
         type: "grid",
         schema: [
           { name: "open_top", label: `${t("open_position")} (${t("top")})`, selector: num },
@@ -700,7 +699,6 @@ class HoneycombBlindsCardEditor extends HTMLElement {
         ],
       },
       {
-        name: "_bottom_row",
         type: "grid",
         schema: [
           { name: "open_bottom", label: `${t("open_position")} (${t("bottom")})`, selector: num },
@@ -714,11 +712,10 @@ class HoneycombBlindsCardEditor extends HTMLElement {
     const t = (k) => this._t(k);
     const num = { number: { min: 0, max: 100, mode: "box" } };
     return [
+      { name: "name", label: t("name"), selector: { text: {} } },
       {
-        name: "_row",
         type: "grid",
         schema: [
-          { name: "name", label: t("name"), selector: { text: {} } },
           { name: "top", label: t("top"), selector: num },
           { name: "bottom", label: t("bottom"), selector: num },
         ],
