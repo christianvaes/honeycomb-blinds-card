@@ -1,0 +1,16 @@
+{
+  "name": "honeycomb-blinds-card",
+  "version": "0.6.0",
+  "description": "A two-motor honeycomb blinds card for Home Assistant.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prebuild": "node scripts/sync-version.js",
+    "build": "esbuild src/index.js --bundle --format=iife --loader:.css=text --outfile=honeycomb-blinds-card.js",
+    "watch": "npm run prebuild && esbuild src/index.js --bundle --format=iife --loader:.css=text --sourcemap=inline --outfile=honeycomb-blinds-card.js --watch",
+    "lint": "eslint src/"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

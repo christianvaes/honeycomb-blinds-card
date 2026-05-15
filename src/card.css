@@ -1,0 +1,176 @@
+:host {
+  --hc-taupe: #b9a38b;
+  --hc-taupe-dark: #a89178;
+  --hc-black: #111111;
+  --hc-rail: 16px;
+  --hc-height: 240px;
+  --hc-width: 100%;
+}
+
+ha-card {
+  overflow: hidden;
+}
+
+.card {
+  padding: 16px;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.scene {
+  position: relative;
+  width: var(--hc-width);
+  height: var(--hc-height);
+  border-radius: 12px;
+  background: #0f0f0f;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.window {
+  position: absolute;
+  inset: 12px;
+  border-radius: 10px;
+  border: 6px solid var(--hc-black);
+  background:
+    linear-gradient(160deg, rgba(116, 150, 185, 0.75) 0%, rgba(168, 195, 222, 0.55) 40%, rgba(220, 236, 248, 0.85) 100%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12));
+  box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.28);
+  z-index: 1;
+}
+
+.window::before {
+  content: "";
+  position: absolute;
+  inset: 6% 8% 50% 8%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0));
+  border-radius: 10px;
+  opacity: 0.7;
+}
+
+.window::after {
+  content: "";
+  position: absolute;
+  inset: 58% 10% 8% 10%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0));
+  border-radius: 12px;
+  opacity: 0.6;
+}
+
+.top-box {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 18px;
+  background: var(--hc-black);
+  z-index: 4;
+}
+
+.top-rail {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: var(--hc-rail);
+  background: var(--hc-black);
+  border-radius: 8px;
+  z-index: 3;
+  transform: translateY(var(--top-y, 0px));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.bottom-rail {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: calc(var(--hc-rail) + 4px);
+  background: var(--hc-black);
+  border-radius: 10px;
+  z-index: 3;
+  transform: translateY(var(--bottom-y, 200px));
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.shade {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: calc(var(--top-y, 0px) + var(--hc-rail));
+  height: calc(var(--bottom-y, 200px) - var(--top-y, 0px) - var(--hc-rail));
+  background:
+    repeating-linear-gradient(
+      0deg,
+      var(--hc-taupe) 0px,
+      var(--hc-taupe) 8px,
+      var(--hc-taupe-dark) 8px,
+      var(--hc-taupe-dark) 10px
+    );
+  border-radius: 6px;
+  z-index: 2;
+  transition: height 0.2s ease, top 0.2s ease;
+}
+
+.status {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: var(--secondary-text-color);
+}
+
+.status strong {
+  color: var(--primary-text-color);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.button {
+  position: relative;
+  flex: 1 1 120px;
+  padding: 10px 14px;
+  border-radius: var(--ha-card-border-radius, 12px);
+  border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.2));
+  background: var(--ha-card-background, var(--card-background-color, #fff));
+  color: var(--primary-text-color);
+  font-weight: 600;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.05s ease, box-shadow 0.2s ease;
+}
+
+.button.selected {
+  border-color: var(--primary-color);
+  box-shadow: inset 0 0 0 1px var(--primary-color);
+  background: var(--ha-card-background, var(--card-background-color, #fff));
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: default;
+  pointer-events: none;
+}
+
+.button.selected:disabled {
+  border-color: var(--primary-color);
+  box-shadow: inset 0 0 0 1px var(--primary-color);
+  opacity: 1;
+}
+
+.button ha-ripple {
+  color: currentColor;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
