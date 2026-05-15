@@ -687,6 +687,45 @@ class HoneycombBlindsCardEditor extends HTMLElement {
     ];
   }
 
+  _positionsSchema() {
+    const t = (k) => this._t(k);
+    const num = { number: { min: 0, max: 100, mode: "box" } };
+    return [
+      {
+        name: "_top_row",
+        type: "grid",
+        schema: [
+          { name: "open_top", label: `${t("open_position")} (${t("top")})`, selector: num },
+          { name: "close_top", label: `${t("close_position")} (${t("top")})`, selector: num },
+        ],
+      },
+      {
+        name: "_bottom_row",
+        type: "grid",
+        schema: [
+          { name: "open_bottom", label: `${t("open_position")} (${t("bottom")})`, selector: num },
+          { name: "close_bottom", label: `${t("close_position")} (${t("bottom")})`, selector: num },
+        ],
+      },
+    ];
+  }
+
+  _presetSchema() {
+    const t = (k) => this._t(k);
+    const num = { number: { min: 0, max: 100, mode: "box" } };
+    return [
+      {
+        name: "_row",
+        type: "grid",
+        schema: [
+          { name: "name", label: t("name"), selector: { text: {} } },
+          { name: "top", label: t("top"), selector: num },
+          { name: "bottom", label: t("bottom"), selector: num },
+        ],
+      },
+    ];
+  }
+
   _toColorArray(value) {
     if (Array.isArray(value) && value.length === 3) return value;
     if (typeof value === "string") {
@@ -711,6 +750,15 @@ class HoneycombBlindsCardEditor extends HTMLElement {
     };
   }
 
+  _positionsData() {
+    return {
+      open_top: this._config.open_top ?? 0,
+      close_top: this._config.close_top ?? 0,
+      open_bottom: this._config.open_bottom ?? 100,
+      close_bottom: this._config.close_bottom ?? 0,
+    };
+  }
+
   _render() {
     if (!this._hass || !this._config) return;
     if (!this.shadowRoot) {
@@ -719,98 +767,79 @@ class HoneycombBlindsCardEditor extends HTMLElement {
         <style>
           .form {
             display: grid;
-            gap: 12px;
+            gap: 16px;
           }
-          .row {
+          .section {
             display: grid;
-            gap: 6px;
-          }
-          .split {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
             gap: 8px;
           }
-          label {
+          label.section-label {
             font-size: 0.9rem;
             color: var(--secondary-text-color);
           }
-          ha-form, ha-textfield {
+          ha-form {
             width: 100%;
+            display: block;
           }
           .preset {
             display: grid;
-            grid-template-columns: 1.5fr 0.8fr 0.8fr auto;
+            grid-template-columns: 1fr auto;
             gap: 8px;
-            align-items: center;
+            align-items: end;
           }
           .mini {
-            padding: 6px 10px;
+            padding: 8px 12px;
             border-radius: var(--ha-card-border-radius, 12px);
             border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.2));
             background: var(--card-background-color, #fff);
+            color: var(--primary-text-color);
+            font: inherit;
             cursor: pointer;
           }
         </style>
         <div class="form">
-          <ha-form id="ha-form"></ha-form>
-          <div class="row">
-            <label id="label-positions">Posities</label>
-            <div class="split">
-              <ha-textfield id="open_top" type="number" min="0" max="100" label=""></ha-textfield>
-              <ha-textfield id="close_top" type="number" min="0" max="100" label=""></ha-textfield>
-            </div>
-            <div class="split">
-              <ha-textfield id="open_bottom" type="number" min="0" max="100" label=""></ha-textfield>
-              <ha-textfield id="close_bottom" type="number" min="0" max="100" label=""></ha-textfield>
-            </div>
+          <ha-form id="main-form"></ha-form>
+          <div class="section">
+            <label class="section-label" id="label-positions"></label>
+            <ha-form id="positions-form"></ha-form>
           </div>
-          <div class="row">
-            <label id="label-presets">Extra presets</label>
+          <div class="section">
+            <label class="section-label" id="label-presets"></label>
             <div id="presets"></div>
             <button id="add-preset" class="mini" type="button"></button>
           </div>
         </div>
       `;
 
-      this.shadowRoot.getElementById("ha-form").addEventListener("value-changed", (e) => {
+      this.shadowRoot.getElementById("main-form").addEventListener("value-changed", (e) => {
         this._updateConfig(e.detail.value);
       });
 
-      this.shadowRoot.getElementById("open_top").addEventListener("input", (e) => {
-        this._updateConfig({ open_top: Number(e.target.value) });
-      });
-      this.shadowRoot.getElementById("close_top").addEventListener("input", (e) => {
-        this._updateConfig({ close_top: Number(e.target.value) });
-      });
-      this.shadowRoot.getElementById("open_bottom").addEventListener("input", (e) => {
-        this._updateConfig({ open_bottom: Number(e.target.value) });
-      });
-      this.shadowRoot.getElementById("close_bottom").addEventListener("input", (e) => {
-        this._updateConfig({ close_bottom: Number(e.target.value) });
+      this.shadowRoot.getElementById("positions-form").addEventListener("value-changed", (e) => {
+        this._updateConfig(e.detail.value);
       });
 
       this.shadowRoot.getElementById("add-preset").addEventListener("click", () => {
         const presets = Array.isArray(this._config.presets) ? [...this._config.presets] : [];
         presets.push({ name: this._t("new_preset"), top: 0, bottom: 0, enabled: true });
         this._updateConfig({ presets });
+        this._renderPresets();
       });
     }
 
-    const form = this.shadowRoot.getElementById("ha-form");
-    form.hass = this._hass;
-    form.computeLabel = (schema) => schema.label || schema.name;
-    form.schema = this._formSchema();
-    form.data = this._formData();
+    const computeLabel = (schema) => schema.label || schema.name;
 
-    this.shadowRoot.getElementById("open_top").value = this._config.open_top ?? 0;
-    this.shadowRoot.getElementById("close_top").value = this._config.close_top ?? 0;
-    this.shadowRoot.getElementById("open_bottom").value = this._config.open_bottom ?? 0;
-    this.shadowRoot.getElementById("close_bottom").value = this._config.close_bottom ?? 0;
+    const mainForm = this.shadowRoot.getElementById("main-form");
+    mainForm.hass = this._hass;
+    mainForm.computeLabel = computeLabel;
+    mainForm.schema = this._formSchema();
+    mainForm.data = this._formData();
 
-    this.shadowRoot.getElementById("open_top").label = `${this._t("open_position")} (${this._t("top")})`;
-    this.shadowRoot.getElementById("close_top").label = `${this._t("close_position")} (${this._t("top")})`;
-    this.shadowRoot.getElementById("open_bottom").label = `${this._t("open_position")} (${this._t("bottom")})`;
-    this.shadowRoot.getElementById("close_bottom").label = `${this._t("close_position")} (${this._t("bottom")})`;
+    const positionsForm = this.shadowRoot.getElementById("positions-form");
+    positionsForm.hass = this._hass;
+    positionsForm.computeLabel = computeLabel;
+    positionsForm.schema = this._positionsSchema();
+    positionsForm.data = this._positionsData();
 
     this.shadowRoot.getElementById("label-positions").textContent = this._t("positions");
     this.shadowRoot.getElementById("label-presets").textContent = this._t("presets");
@@ -824,41 +853,31 @@ class HoneycombBlindsCardEditor extends HTMLElement {
     if (!container) return;
     container.innerHTML = "";
     const presets = Array.isArray(this._config.presets) ? this._config.presets : [];
+    const computeLabel = (schema) => schema.label || schema.name;
+    const schema = this._presetSchema();
 
     presets.forEach((preset, index) => {
       const row = document.createElement("div");
       row.className = "preset";
 
-      const name = document.createElement("ha-textfield");
-      name.value = preset.name || this._t("preset");
-      name.label = this._t("name");
-      name.addEventListener("input", (e) => {
-        const next = [...presets];
-        next[index] = { ...next[index], name: e.target.value };
-        this._updateConfig({ presets: next });
-      });
-
-      const top = document.createElement("ha-textfield");
-      top.type = "number";
-      top.min = "0";
-      top.max = "100";
-      top.value = preset.top ?? 0;
-      top.label = this._t("top");
-      top.addEventListener("input", (e) => {
-        const next = [...presets];
-        next[index] = { ...next[index], top: Number(e.target.value) };
-        this._updateConfig({ presets: next });
-      });
-
-      const bottom = document.createElement("ha-textfield");
-      bottom.type = "number";
-      bottom.min = "0";
-      bottom.max = "100";
-      bottom.value = preset.bottom ?? 0;
-      bottom.label = this._t("bottom");
-      bottom.addEventListener("input", (e) => {
-        const next = [...presets];
-        next[index] = { ...next[index], bottom: Number(e.target.value) };
+      const form = document.createElement("ha-form");
+      form.hass = this._hass;
+      form.computeLabel = computeLabel;
+      form.schema = schema;
+      form.data = {
+        name: typeof preset.name === "string" ? preset.name : this._t("preset"),
+        top: preset.top ?? 0,
+        bottom: preset.bottom ?? 0,
+      };
+      form.addEventListener("value-changed", (e) => {
+        const value = e.detail.value || {};
+        const next = Array.isArray(this._config.presets) ? [...this._config.presets] : [];
+        next[index] = {
+          ...next[index],
+          name: typeof value.name === "string" ? value.name : next[index]?.name,
+          top: Number(value.top) || 0,
+          bottom: Number(value.bottom) || 0,
+        };
         this._updateConfig({ presets: next });
       });
 
@@ -867,14 +886,13 @@ class HoneycombBlindsCardEditor extends HTMLElement {
       remove.type = "button";
       remove.textContent = this._t("remove");
       remove.addEventListener("click", () => {
-        const next = [...presets];
+        const next = Array.isArray(this._config.presets) ? [...this._config.presets] : [];
         next.splice(index, 1);
         this._updateConfig({ presets: next });
+        this._renderPresets();
       });
 
-      row.appendChild(name);
-      row.appendChild(top);
-      row.appendChild(bottom);
+      row.appendChild(form);
       row.appendChild(remove);
       container.appendChild(row);
     });
